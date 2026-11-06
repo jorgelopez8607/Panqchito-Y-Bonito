@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Boletos de Cine - PanqchitoYBonito</title>
+    <style>
+        /* Importar la fuente pixel Minecraft */
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('fonts/Minecraft.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #121212;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            font-family: 'Minecraft', monospace, sans-serif;
+            color: white;
+            
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: unset;
+            font-smooth: never;
+            text-rendering: pixelated;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        /* Contenedor en fila para los boletos */
+        .fila-boletos {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* Envoltorio para posicionar el tooltip relativo a cada boleto */
+        .boleto-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        /* Estilo visual para los sprites */
+        .boleto-sprite, .btn-sprite-crear {
+            width: 128px;
+            height: 128px;
+            image-rendering: pixelated;
+            cursor: pointer;
+            transition: transform 0.15s ease-in-out;
+            display: block;
+        }
+
+        .btn-sprite-crear {
+            opacity: 0.85;
+        }
+
+        .btn-sprite-crear:hover, .boleto-sprite:hover {
+            transform: scale(1.08);
+            opacity: 1;
+        }
+
+        /* Tooltip flotante superior nítido */
+        .tooltip-vacio {
+            visibility: hidden;
+            opacity: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            text-align: center;
+            padding: 4px 8px;
+            border-radius: 2px;
+            border: 1px solid #555;
+            font-family: 'Minecraft', monospace;
+            font-size: 14px;
+            line-height: 1;
+
+            -webkit-font-smoothing: none;
+            font-smooth: never;
+            text-rendering: pixelated;
+
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 8px;
+
+            white-space: nowrap;
+            transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .boleto-wrapper:hover .tooltip-vacio {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* VENTANA MODAL GENERAL (OPCIONES: VER / EDITAR / BORRAR) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-cuadrado {
+            background-color: #1e1e1e;
+            border: 4px solid #fff;
+            padding: 24px;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
+            image-rendering: pixelated;
+        }
+
+        .modal-titulo {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #ffcc00;
+        }
+
+        .modal-botones {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn-opcion {
+            width: 85px;
+            height: 60px;
+            background-color: #333;
+            border: 3px solid #fff;
+            color: white;
+            font-family: 'Minecraft', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.1s, transform 0.1s;
+            -webkit-font-smoothing: none;
+            font-smooth: never;
+            text-rendering: pixelated;
+        }
+
+        .btn-opcion:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-ver { background-color: #27ae60; }
+        .btn-ver:hover { background-color: #2ecc71; }
+        .btn-editar { background-color: #2980b9; }
+        .btn-editar:hover { background-color: #3498db; }
+        .btn-borrar { background-color: #c0392b; }
+        .btn-borrar:hover { background-color: #e74c3c; }
+
+        /* PANEL DE SOLO VISUALIZACIÓN (MODAL VER) */
+        .modal-ver-panel {
+            background-color: #181818;
+            border: 4px solid #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 420px;
+            padding: 24px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.95);
+            image-rendering: pixelated;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            gap: 16px;
+            box-sizing: border-box;
+        }
+
+        /* PANEL EDITAR CINE */
+        .modal-cine-panel {
+            background-color: #181818;
+            border: 4px solid #fff;
+            display: flex;
+            width: 1020px;
+            height: 620px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.95);
+            image-rendering: pixelated;
+            position: absolute;
+            top: 52%;
+            left: 50%;
+            transform: translate(-50%, -48%);
+            gap: 20px;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .modal-cine-izq {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            width: 380px;
+            gap: 6px;
+        }
+
+        /* CONTENEDOR DE VISTA PREVIA SOBRE EL SPRITE GRANDE */
+        .preview-boleto-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            image-rendering: pixelated;
+        }
+
+        .sprite-gigante-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+            filter: drop-shadow(0 0 15px rgba(0,0,0,0.95));
+        }
+
+        /* CAPA DE TEXTO PRINCIPAL SOBRE EL BOLETO */
+        .preview-capa-texto {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 32px 10px 4px 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 2px;
+            color: #000000;
+            font-family: 'Minecraft', monospace;
+            text-align: center;
+            pointer-events: none;
+            -webkit-font-smoothing: none;
+            font-smooth: never;
+            text-rendering: pixelated;
+        }
+
+        .prev-titulo-ticket {
+            font-size: 8.5px;
+            font-weight: bold;
+            color: #000000;
+        }
+
+        .prev-pelicula {
+            font-size: 12px;
+            font-weight: bold;
+            color: #000000;
+        }
+
+        .prev-sala {
+            font-size: 13px;
+            font-weight: bold;
+            color: #000000;
+        }
+
+        .prev-asientos-etiqueta {
+            font-size: 9px;
+            color: #000000;
+        }
+
+        .prev-asientos-valor {
+            font-size: 11px;
+            font-weight: bold;
+            color: #000000;
+        }
+
+        .prev-clasificacion {
+            font-size: 9px;
+            color: #000000;
+        }
+
+        .prev-fecha-hora {
+            font-size: 9.5px;
+            color: #000000;
+        }
+
+        /* MINI QR TRANSPARENTE */
+        .preview-qr-grid {
+            background-color: transparent;
+            border: none;
+            display: grid;
+            grid-template-columns: repeat(21, 2.8px);
+            grid-template-rows: repeat(21, 2.8px);
+            image-rendering: pixelated;
+            margin-top: 1px;
+        }
+
+        .prev-qr-pixel {
+            width: 2.8px;
+            height: 2.8px;
+            background-color: transparent;
+        }
+
+        .prev-qr-pixel.activo {
+            background-color: #000000;
+        }
+
+        .prev-codigo-txt {
+            font-size: 9px;
+            color: #000000;
+            letter-spacing: 0.5px;
+        }
+
+        /* SECCIÓN INFERIOR EN FUENTE GRIS */
+        .prev-seccion-gris {
+            color: #555555;
+            font-size: 7px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5px;
+            margin-top: 2px;
+            text-transform: uppercase;
+            line-height: 1.1;
+            width: 100%;
+        }
+
+        .prev-exibidora {
+            align-self: flex-start;
+            text-align: left;
+            margin-left: 60px;
+            margin-top: 4px;
+        }
+
+        .prev-ubicacion-gris {
+            align-self: flex-start;
+            text-align: left;
+            margin-left: 60px;
+        }
+
+        .prev-legal-factura {
+            font-size: 7.5px;
+            text-transform: lowercase;
+            margin-top: 6px;
+            text-align: center;
+            line-height: 1.15;
+        }
+
+        /* EDITOR DE QR GRANDE */
+        #seccionQRContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            width: 100%;
+        }
+
+        .qr-editor-container {
+            background-color: #111;
+            border: 2px solid #fff;
+            padding: 3px;
+            display: grid;
+            grid-template-columns: repeat(21, 5px);
+            grid-template-rows: repeat(21, 5px);
+            gap: 1px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+            image-rendering: pixelated;
+            user-select: none;
+        }
+
+        .qr-pixel {
+            background-color: #ffffff;
+            width: 5px;
+            height: 5px;
+            cursor: pointer;
+        }
+
+        .qr-pixel.activo {
+            background-color: #000000;
+        }
+
+        .qr-controles {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-qr-accion {
+            background-color: #333;
+            border: 2px solid #fff;
+            color: #fff;
+            font-family: 'Minecraft', monospace;
+            font-size: 8px;
+            padding: 2px 5px;
+            cursor: pointer;
+        }
+
+        .modal-cine-der {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .seccion-titulo {
+            font-size: 11px;
+            color: #ffcc00;
+            border-bottom: 2px dashed #555;
+            padding-bottom: 2px;
+            margin-top: 2px;
+        }
+
+        .campo-grupo {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .campo-grupo label {
+            font-size: 9px;
+            color: #aaa;
+        }
+
+        .campo-grupo input, .campo-grupo select {
+            background-color: #262626;
+            border: 2px solid #fff;
+            color: white;
+            padding: 4px 6px;
+            font-family: 'Minecraft', monospace;
+            font-size: 11px;
+            outline: none;
+            -webkit-font-smoothing: none;
+            font-smooth: never;
+            text-rendering: pixelated;
+        }
+
+        .botones-accion-panel {
+            display: flex;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .btn-cine-opcion {
+            flex: 1;
+            padding: 8px;
+            background-color: #333;
+            border: 2px solid #fff;
+            color: white;
+            font-family: 'Minecraft', monospace;
+            font-size: 11px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.1s, transform 0.1s;
+            -webkit-font-smoothing: none;
+            font-smooth: never;
+            text-rendering: pixelated;
+        }
+
+        .btn-cine-opcion:hover {
+            background-color: #555;
+        }
+
+        .btn-guardar-cine {
+            background-color: #27ae60;
+        }
+        .btn-guardar-cine:hover {
+            background-color: #2ecc71;
+        }
+
+        .btn-cancelar-cine {
+            background-color: #c0392b;
+        }
+        .btn-cancelar-cine:hover {
+            background-color: #e74c3c;
+        }
+    </style>
+</head>
+<body onmouseup="detenerPintado()">
+
+    <h1>Boletitos</h1>
+
+    <!-- Contenedor único de boletos -->
+    <div class="fila-boletos" id="contenedor-boletos">
+        <!-- Generación dinámica -->
+    </div>
+
+    <!-- CUADRADO MODAL 1: OPCIONES (VER / EDITAR / BORRAR) -->
+    <div class="modal-overlay" id="modalOpciones">
+        <div class="modal-cuadrado">
+            <div class="modal-titulo">Opciones</div>
+            <div class="modal-botones">
+                <div class="btn-opcion btn-ver" id="btnOpcionVer">VER</div>
+                <div class="btn-opcion btn-editar" id="btnOpcionEditar">EDITAR</div>
+                <div class="btn-opcion btn-borrar" id="btnOpcionBorrar">BORRAR</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUADRADO MODAL 2: VISTA RÁPIDA (SOLO VER) -->
+    <div class="modal-overlay" id="modalVerBoleto">
+        <div class="modal-ver-panel">
+            <div class="modal-titulo">Vista del Boleto</div>
+            
+            <div class="preview-boleto-container" id="areaCapturaBoleto" style="width: 350px; height: 350px;">
+                <img src="sprites/boleto_vacio_grande.png" alt="Boleto Vista" class="sprite-gigante-bg" id="spriteVerGigante">
+                
+                <div class="preview-capa-texto">
+                    <div class="prev-titulo-ticket">ticket de Entrada</div>
+                    <div class="prev-pelicula" id="verPelicula">Película</div>
+                    <div class="prev-sala" id="verSala">--</div>
+                    <div class="prev-asientos-etiqueta">Asiento(s)</div>
+                    <div class="prev-asientos-valor" id="verAsientos">--</div>
+                    <div class="prev-clasificacion" id="verClasificacion">Clasificacion: --</div>
+                    <div class="prev-fecha-hora" id="verFechaHora">Fecha: -- --:--</div>
+
+                    <div class="preview-qr-grid" id="verQrGrid" style="display:none;"></div>
+                    <div class="prev-codigo-txt" id="verCodigoTxt"></div>
+
+                    <div class="prev-seccion-gris">
+                        <div>FIESTA CINEPOLIS 35 PRECIO = <span id="verPrecio">$0.00</span></div>
+                        <div class="prev-exibidora">EXHIBIDORA MEXICANA<br>CINEPOLIS</div>
+                        <div class="prev-ubicacion-gris" id="verUbicacionGris">--</div>
+                        <div class="prev-legal-factura">
+                            puede solicitar su factura en el area de atencion<br>
+                            a clientes de este establecimiento o si lo prefiere,<br>
+                            puede obtenerla en el portal:<br>
+                            www.cinepolis.com
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-cine-opcion btn-cancelar-cine" id="btnCerrarVer" style="width: 100%; margin-top: 8px;">CERRAR</div>
+        </div>
+    </div>
+
+    <!-- CUADRADO MODAL 3: PANEL DE EDICIÓN Y VISTA PREVIA -->
+    <div class="modal-overlay" id="modalCine">
+        <div class="modal-cine-panel">
+            
+            <!-- Izquierda: Vista Previa Interactiva -->
+            <div class="modal-cine-izq">
+                <div class="preview-boleto-container">
+                    <img src="sprites/boleto_vacio_grande.png" alt="Boleto Vista Previa" class="sprite-gigante-bg" id="spriteModalGigante">
+                    
+                    <!-- Capa de texto ordenada -->
+                    <div class="preview-capa-texto">
+                        <div class="prev-titulo-ticket">ticket de Entrada</div>
+                        <div class="prev-pelicula" id="prevPelicula">Película</div>
+                        <div class="prev-sala" id="prevSala">--</div>
+                        <div class="prev-asientos-etiqueta">Asiento(s)</div>
+                        <div class="prev-asientos-valor" id="prevAsientos">--</div>
+                        <div class="prev-clasificacion" id="prevClasificacion">Clasificacion: --</div>
+                        <div class="prev-fecha-hora" id="prevFechaHora">Fecha: -- --:--</div>
+
+                        <!-- Mini QR transparente -->
+                        <div class="preview-qr-grid" id="prevQrGrid" style="display:none;"></div>
+
+                        <!-- Código de texto debajo del QR -->
+                        <div class="prev-codigo-txt" id="prevCodigoTxt"></div>
+
+                        <!-- Texto inferior en color gris -->
+                        <div class="prev-seccion-gris">
+                            <div>FIESTA CINEPOLIS 35 PRECIO = <span id="prevPrecio">$0.00</span></div>
+                            <div class="prev-exibidora">EXHIBIDORA MEXICANA<br>CINEPOLIS</div>
+                            <div class="prev-ubicacion-gris" id="prevUbicacionGris">--</div>
+                            <div class="prev-legal-factura">
+                                puede solicitar su factura en el area de atencion<br>
+                                a clientes de este establecimiento o si lo prefiere,<br>
+                                puede obtenerla en el portal:<br>
+                                www.cinepolis.com
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Editor de QR (Solo para Cinépolis) -->
+                <div id="seccionQRContainer">
+                    <div style="font-size: 7.5px; color: #ffcc00; text-align: center;">DIBUJAR CÓDIGO QR (21x21)</div>
+                    <div class="qr-editor-container" id="qrEditorGrid"></div>
+                    <div class="qr-controles">
+                        <button class="btn-qr-accion" id="btnLimpiarQR" type="button">Limpiar QR</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Derecha: Campos de Formulario -->
+            <div class="modal-cine-der">
+                <div class="seccion-titulo">1. PELÍCULA Y PRECIO</div>
+                <div style="display: flex; gap: 8px;">
+                    <div class="campo-grupo" style="flex: 1.5;">
+                        <label>Nombre de la Película</label>
+                        <input type="text" id="inputPelicula" placeholder="Ej. Spider-Man">
+                    </div>
+                    <div class="campo-grupo" style="flex: 1;">
+                        <label>Clasificación</label>
+                        <input type="text" id="inputClasificacion" placeholder="Ej. B15">
+                    </div>
+                    <div class="campo-grupo" style="flex: 1;">
+                        <label>Precio ($)</label>
+                        <input type="text" id="inputPrecio" placeholder="Ej. 35.00">
+                    </div>
+                </div>
+
+                <div class="seccion-titulo">2. CINE Y UBICACIÓN</div>
+                <div style="display: flex; gap: 8px;">
+                    <div class="campo-grupo" style="flex: 1;">
+                        <label>Cadena</label>
+                        <select id="selectCine">
+                            <option value="vacio">Seleccionar...</option>
+                            <option value="cinepolis">Cinépolis</option>
+                            <option value="cinemex">Cinemex</option>
+                        </select>
+                    </div>
+                    <div class="campo-grupo" style="flex: 1.5;">
+                        <label>Ubicación / Complejo</label>
+                        <input type="text" id="inputUbicacion" placeholder="Ej. Town Center El Rosario">
+                    </div>
+                </div>
+
+                <div class="seccion-titulo">3. FUNCIÓN</div>
+                <div style="display: flex; gap: 8px;">
+                    <div class="campo-grupo" style="flex: 1;">
+                        <label>Sala</label>
+                        <input type="text" id="inputSala" placeholder="Ej. Sala 4">
+                    </div>
+                    <div class="campo-grupo" style="flex: 1;">
+                        <label>Hora</label>
+                        <input type="text" id="inputHora" placeholder="Ej. 12:20">
+                    </div>
+                </div>
+                <div class="campo-grupo">
+                    <label>Fecha</label>
+                    <input type="text" id="inputFecha" placeholder="Ej. 07-12-2022">
+                </div>
+
+                <div class="seccion-titulo">4. UBICACIÓN Y CÓDIGO</div>
+                <div class="campo-grupo">
+                    <label>Asiento(s) / Lugar</label>
+                    <input type="text" id="inputAsientos" placeholder="Ej. Fila C, Asientos 12, 13">
+                </div>
+                <div class="campo-grupo">
+                    <label>Código (Folio / Texto)</label>
+                    <input type="text" id="inputCodigo" placeholder="Ej. ABC123XYZ">
+                </div>
+
+                <div class="botones-accion-panel">
+                    <div class="btn-cine-opcion btn-guardar-cine" id="btnGuardarCambios">GUARDAR</div>
+                    <div class="btn-cine-opcion btn-cancelar-cine" id="btnVolverModal">CANCELAR</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, remove, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBf8vNjCFQg1wit4gVO0uYspUC1CUAKhjw",
+            authDomain: "panqchitoybonito.firebaseapp.com",
+            projectId: "panqchitoybonito",
+            storageBucket: "panqchitoybonito.firebasestorage.app",
+            messagingSenderId: "393111988377",
+            appId: "1:393111988377:web:a9307b94461b165877b008",
+            measurementId: "G-BXJPJ3MGKZ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const contenedorBoletos = document.getElementById("contenedor-boletos");
+        const boletosRef = ref(db, 'boletos');
+
+        const modalOpciones = document.getElementById("modalOpciones");
+        const modalVerBoleto = document.getElementById("modalVerBoleto");
+        const modalCine = document.getElementById("modalCine");
+        
+        const btnOpcionVer = document.getElementById("btnOpcionVer");
+        const btnOpcionEditar = document.getElementById("btnOpcionEditar");
+        const btnOpcionBorrar = document.getElementById("btnOpcionBorrar");
+        const btnCerrarVer = document.getElementById("btnCerrarVer");
+
+        const spriteModalGigante = document.getElementById("spriteModalGigante");
+        const spriteVerGigante = document.getElementById("spriteVerGigante");
+        
+        const qrEditorGrid = document.getElementById("qrEditorGrid");
+        const prevQrGrid = document.getElementById("prevQrGrid");
+        const verQrGrid = document.getElementById("verQrGrid");
+        const seccionQRContainer = document.getElementById("seccionQRContainer");
+        const btnLimpiarQR = document.getElementById("btnLimpiarQR");
+
+        const prevPelicula = document.getElementById("prevPelicula");
+        const prevSala = document.getElementById("prevSala");
+        const prevAsientos = document.getElementById("prevAsientos");
+        const prevClasificacion = document.getElementById("prevClasificacion");
+        const prevFechaHora = document.getElementById("prevFechaHora");
+        const prevCodigoTxt = document.getElementById("prevCodigoTxt");
+        const prevPrecio = document.getElementById("prevPrecio");
+        const prevUbicacionGris = document.getElementById("prevUbicacionGris");
+
+        const verPelicula = document.getElementById("verPelicula");
+        const verSala = document.getElementById("verSala");
+        const verAsientos = document.getElementById("verAsientos");
+        const verClasificacion = document.getElementById("verClasificacion");
+        const verFechaHora = document.getElementById("verFechaHora");
+        const verCodigoTxt = document.getElementById("verCodigoTxt");
+        const verPrecio = document.getElementById("verPrecio");
+        const verUbicacionGris = document.getElementById("verUbicacionGris");
+        
+        const inputPelicula = document.getElementById("inputPelicula");
+        const inputClasificacion = document.getElementById("inputClasificacion");
+        const inputPrecio = document.getElementById("inputPrecio");
+        const selectCine = document.getElementById("selectCine");
+        const inputUbicacion = document.getElementById("inputUbicacion");
+        const inputSala = document.getElementById("inputSala");
+        const inputHora = document.getElementById("inputHora");
+        const inputFecha = document.getElementById("inputFecha");
+        const inputAsientos = document.getElementById("inputAsientos");
+        const inputCodigo = document.getElementById("inputCodigo");
+
+        const btnGuardarCambios = document.getElementById("btnGuardarCambios");
+        const btnVolverModal = document.getElementById("btnVolverModal");
+        
+        let boletoSeleccionadoKey = null;
+        let boletoSeleccionadoData = null;
+        let matrizQR = Array(21).fill(0).map(() => Array(21).fill(false));
+        let estaPintando = false;
+        let valorPintado = true;
+
+        function construirGridQR() {
+            qrEditorGrid.innerHTML = "";
+            prevQrGrid.innerHTML = "";
+            verQrGrid.innerHTML = "";
+
+            for (let r = 0; r < 21; r++) {
+                for (let c = 0; c < 21; c++) {
+                    const pixel = document.createElement("div");
+                    pixel.className = "qr-pixel";
+                    if (matrizQR[r][c]) pixel.classList.add("activo");
+
+                    pixel.onmousedown = (e) => {
+                        e.preventDefault();
+                        estaPintando = true;
+                        valorPintado = !matrizQR[r][c];
+                        matrizQR[r][c] = valorPintado;
+                        actualizarQRs();
+                    };
+
+                    pixel.onmouseover = () => {
+                        if (estaPintando) {
+                            matrizQR[r][c] = valorPintado;
+                            actualizarQRs();
+                        }
+                    };
+                    qrEditorGrid.appendChild(pixel);
+
+                    const prevPixel = document.createElement("div");
+                    prevPixel.className = "prev-qr-pixel";
+                    if (matrizQR[r][c]) prevPixel.classList.add("activo");
+                    prevQrGrid.appendChild(prevPixel);
+
+                    const verPixel = document.createElement("div");
+                    verPixel.className = "prev-qr-pixel";
+                    if (matrizQR[r][c]) verPixel.classList.add("activo");
+                    verQrGrid.appendChild(verPixel);
+                }
+            }
+        }
+
+        function actualizarQRs() {
+            const pixelesGrandes = qrEditorGrid.children;
+            const pixelesChicos = prevQrGrid.children;
+            const pixelesVer = verQrGrid.children;
+            let idx = 0;
+            for (let r = 0; r < 21; r++) {
+                for (let c = 0; c < 21; c++) {
+                    const activo = matrizQR[r][c];
+                    pixelesGrandes[idx].classList.toggle("activo", activo);
+                    pixelesChicos[idx].classList.toggle("activo", activo);
+                    pixelesVer[idx].classList.toggle("activo", activo);
+                    idx++;
+                }
+            }
+        }
+
+        window.detenerPintado = () => { estaPintando = false; };
+        construirGridQR();
+
+        btnLimpiarQR.onclick = () => {
+            matrizQR = Array(21).fill(0).map(() => Array(21).fill(false));
+            construirGridQR();
+        };
+
+        function actualizarVistaPreviaTextos() {
+            prevPelicula.textContent = inputPelicula.value.trim() || "Nombre de Película";
+            prevSala.textContent = inputSala.value.trim() || "--";
+            prevAsientos.textContent = inputAsientos.value.trim() || "--";
+            prevClasificacion.textContent = `Clasificacion: ${inputClasificacion.value.trim() || "--"}`;
+            
+            const fechaVal = inputFecha.value.trim() || "07-12-2022";
+            const horaVal = inputHora.value.trim() || "12:20";
+            prevFechaHora.textContent = `Fecha: ${fechaVal} ${horaVal}`;
+
+            prevCodigoTxt.textContent = inputCodigo.value.trim() || "";
+            prevPrecio.textContent = inputPrecio.value.trim() ? `$${inputPrecio.value.trim()}` : "$0.00";
+            prevUbicacionGris.textContent = inputUbicacion.value.trim() ? inputUbicacion.value.trim().toUpperCase() : "--";
+        }
+
+        inputPelicula.oninput = actualizarVistaPreviaTextos;
+        inputClasificacion.oninput = actualizarVistaPreviaTextos;
+        inputPrecio.oninput = actualizarVistaPreviaTextos;
+        inputUbicacion.oninput = actualizarVistaPreviaTextos;
+        inputSala.oninput = actualizarVistaPreviaTextos;
+        inputAsientos.oninput = actualizarVistaPreviaTextos;
+        inputFecha.oninput = actualizarVistaPreviaTextos;
+        inputHora.oninput = actualizarVistaPreviaTextos;
+        inputCodigo.oninput = actualizarVistaPreviaTextos;
+
+        function actualizarVisibilidadQR(tipo) {
+            if (tipo === "cinepolis") {
+                seccionQRContainer.style.display = "flex";
+                prevQrGrid.style.display = "grid";
+                verQrGrid.style.display = "grid";
+            } else {
+                seccionQRContainer.style.display = "none";
+                prevQrGrid.style.display = "none";
+                verQrGrid.style.display = "none";
+            }
+        }
+
+        function cerrarTodo() {
+            modalOpciones.style.display = "none";
+            modalVerBoleto.style.display = "none";
+            modalCine.style.display = "none";
+            boletoSeleccionadoKey = null;
+            boletoSeleccionadoData = null;
+            estaPintando = false;
+        }
+
+        modalOpciones.onclick = (e) => { if (e.target === modalOpciones) cerrarTodo(); };
+        modalVerBoleto.onclick = (e) => { if (e.target === modalVerBoleto) cerrarTodo(); };
+        modalCine.onclick = (e) => { if (e.target === modalCine) cerrarTodo(); };
+
+        btnCerrarVer.onclick = () => cerrarTodo();
+
+        btnOpcionBorrar.onclick = () => {
+            if (boletoSeleccionadoKey) {
+                remove(ref(db, `boletos/${boletoSeleccionadoKey}`))
+                    .then(() => cerrarTodo())
+                    .catch((e) => console.error("Error al eliminar: ", e));
+            }
+        };
+
+        btnOpcionVer.onclick = () => {
+            if (boletoSeleccionadoKey && boletoSeleccionadoData) {
+                modalOpciones.style.display = "none";
+                
+                const tipoActual = boletoSeleccionadoData.tipo || "vacio";
+                if (tipoActual === "cinemex") {
+                    spriteVerGigante.src = "sprites/boleto_cinemex_grande.png";
+                } else if (tipoActual === "cinepolis") {
+                    spriteVerGigante.src = "sprites/boleto_cinepolis_grande.png";
+                } else {
+                    spriteVerGigante.src = "sprites/boleto_vacio_grande.png";
+                }
+
+                verPelicula.textContent = boletoSeleccionadoData.pelicula || "Nombre de Película";
+                verSala.textContent = boletoSeleccionadoData.sala || "--";
+                verAsientos.textContent = boletoSeleccionadoData.asientos || "--";
+                verClasificacion.textContent = `Clasificacion: ${boletoSeleccionadoData.clasificacion || "--"}`;
+                verFechaHora.textContent = `Fecha: ${boletoSeleccionadoData.fecha || "07-12-2022"} ${boletoSeleccionadoData.hora || "12:20"}`;
+                verCodigoTxt.textContent = boletoSeleccionadoData.codigo || "";
+                verPrecio.textContent = boletoSeleccionadoData.precio ? `$${boletoSeleccionadoData.precio}` : "$0.00";
+                verUbicacionGris.textContent = boletoSeleccionadoData.ubicacion ? boletoSeleccionadoData.ubicacion.toUpperCase() : "--";
+
+                if (tipoActual === "cinepolis") {
+                    verQrGrid.style.display = "grid";
+                    if (boletoSeleccionadoData.qr) {
+                        matrizQR = boletoSeleccionadoData.qr;
+                    } else {
+                        matrizQR = Array(21).fill(0).map(() => Array(21).fill(false));
+                    }
+                } else {
+                    verQrGrid.style.display = "none";
+                }
+                construirGridQR();
+
+                modalVerBoleto.style.display = "flex";
+            }
+        };
+
+        btnOpcionEditar.onclick = () => {
+            if (boletoSeleccionadoKey) {
+                modalOpciones.style.display = "none";
+                
+                const tipoActual = boletoSeleccionadoData?.tipo || "vacio";
+                selectCine.value = tipoActual;
+
+                if (tipoActual === "cinemex") {
+                    spriteModalGigante.src = "sprites/boleto_cinemex_grande.png";
+                } else if (tipoActual === "cinepolis") {
+                    spriteModalGigante.src = "sprites/boleto_cinepolis_grande.png";
+                } else {
+                    spriteModalGigante.src = "sprites/boleto_vacio_grande.png";
+                }
+
+                actualizarVisibilidadQR(tipoActual);
+
+                inputPelicula.value = boletoSeleccionadoData?.pelicula || "";
+                inputClasificacion.value = boletoSeleccionadoData?.clasificacion || "";
+                inputPrecio.value = boletoSeleccionadoData?.precio || "";
+                inputUbicacion.value = boletoSeleccionadoData?.ubicacion || "";
+                inputSala.value = boletoSeleccionadoData?.sala || "";
+                inputHora.value = boletoSeleccionadoData?.hora || "";
+                inputFecha.value = boletoSeleccionadoData?.fecha || "";
+                inputAsientos.value = boletoSeleccionadoData?.asientos || "";
+                inputCodigo.value = boletoSeleccionadoData?.codigo || "";
+
+                if (boletoSeleccionadoData?.qr) {
+                    matrizQR = boletoSeleccionadoData.qr;
+                } else {
+                    matrizQR = Array(21).fill(0).map(() => Array(21).fill(false));
+                }
+                construirGridQR();
+                actualizarVistaPreviaTextos();
+
+                modalCine.style.display = "flex";
+            }
+        };
+
+        selectCine.onchange = () => {
+            const val = selectCine.value;
+            if (val === "cinemex") {
+                spriteModalGigante.src = "sprites/boleto_cinemex_grande.png";
+            } else if (val === "cinepolis") {
+                spriteModalGigante.src = "sprites/boleto_cinepolis_grande.png";
+            } else {
+                spriteModalGigante.src = "sprites/boleto_vacio_grande.png";
+            }
+            actualizarVisibilidadQR(val);
+        };
+
+        btnGuardarCambios.onclick = () => {
+            if (boletoSeleccionadoKey) {
+                const nuevoTipo = selectCine.value;
+                const tooltipTexto = inputPelicula.value.trim() ? inputPelicula.value.trim() : (nuevoTipo !== 'vacio' ? nuevoTipo : 'vacío');
+
+                const datosActualizar = {
+                    tipo: nuevoTipo,
+                    asiento: tooltipTexto,
+                    pelicula: inputPelicula.value.trim(),
+                    clasificacion: inputClasificacion.value.trim(),
+                    precio: inputPrecio.value.trim(),
+                    ubicacion: inputUbicacion.value.trim(),
+                    sala: inputSala.value.trim(),
+                    hora: inputHora.value.trim(),
+                    fecha: inputFecha.value.trim(),
+                    asientos: inputAsientos.value.trim(),
+                    codigo: inputCodigo.value.trim()
+                };
+
+                if (nuevoTipo === "cinepolis") {
+                    datosActualizar.qr = matrizQR;
+                } else {
+                    datosActualizar.qr = null;
+                }
+
+                update(ref(db, `boletos/${boletoSeleccionadoKey}`), datosActualizar)
+                    .then(() => cerrarTodo());
+            }
+        };
+
+        btnVolverModal.onclick = () => cerrarTodo();
+
+        // Función auxiliar para convertir formato de fecha "DD-MM-YYYY" o "YYYY-MM-DD" en objeto timestamp o Date para ordenar
+        function convertirFechaAObjeto(fechaStr, horaStr) {
+            if (!fechaStr) return 0;
+            // Intentar detectar formato DD-MM-YYYY o YYYY-MM-DD
+            let partes = fechaStr.split(/[-/]/);
+            let anio = 0, mes = 0, dia = 0;
+            if (partes.length === 3) {
+                if (partes[0].length === 4) {
+                    anio = parseInt(partes[0]);
+                    mes = parseInt(partes[1]) - 1;
+                    dia = parseInt(partes[2]);
+                } else {
+                    dia = parseInt(partes[0]);
+                    mes = parseInt(partes[1]) - 1;
+                    anio = parseInt(partes[2]);
+                }
+            }
+            let horas = 0, minutos = 0;
+            if (horaStr) {
+                let partesHora = horaStr.split(":");
+                if (partesHora.length === 2) {
+                    horas = parseInt(partesHora[0]) || 0;
+                    minutos = parseInt(partesHora[1]) || 0;
+                }
+            }
+            return new Date(anio, mes, dia, horas, minutos).getTime();
+        }
+
+        onValue(boletosRef, (snapshot) => {
+            contenedorBoletos.innerHTML = "";
+            const data = snapshot.val();
+
+            if (data) {
+                // Convertir el objeto de Firebase a un arreglo para poder ordenarlo
+                let listaBoletos = Object.keys(data).map(key => ({
+                    key: key,
+                    ...data[key]
+                }));
+
+                // Ordenar los boletos por fecha y hora (de más antiguo a más reciente, o por fecha ingresada)
+                listaBoletos.sort((a, b) => {
+                    let tiempoA = convertirFechaAObjeto(a.fecha, a.hora) || a.creado || 0;
+                    let tiempoB = convertirFechaAObjeto(b.fecha, b.hora) || b.creado || 0;
+                    return tiempoA - tiempoB;
+                });
+
+                listaBoletos.forEach((boleto) => {
+                    const key = boleto.key;
+
+                    const wrapper = document.createElement("div");
+                    wrapper.className = "boleto-wrapper";
+
+                    const tooltip = document.createElement("span");
+                    tooltip.className = "tooltip-vacio";
+                    tooltip.textContent = boleto.asiento || "vacío";
+
+                    const img = document.createElement("img");
+                    
+                    if (boleto.tipo === "cinemex") {
+                        img.src = "sprites/boleto_cinemex.png";
+                    } else if (boleto.tipo === "cinepolis") {
+                        img.src = "sprites/boleto_cinepolis.png";
+                    } else {
+                        img.src = "sprites/boleto_vacio.png";
+                    }
+
+                    img.alt = "Boleto";
+                    img.className = "boleto-sprite";
+                    
+                    img.onclick = () => {
+                        boletoSeleccionadoKey = key;
+                        boletoSeleccionadoData = boleto;
+                        modalOpciones.style.display = "flex";
+                    };
+
+                    wrapper.appendChild(tooltip);
+                    wrapper.appendChild(img);
+                    contenedorBoletos.appendChild(wrapper);
+                });
+            }
+
+            const wrapperNuevo = document.createElement("div");
+            wrapperNuevo.className = "boleto-wrapper";
+
+            const tooltipNuevo = document.createElement("span");
+            tooltipNuevo.className = "tooltip-vacio";
+            tooltipNuevo.textContent = "Nuevo boleto";
+
+            const btnNuevo = document.createElement("img");
+            btnNuevo.src = "sprites/boleto_nuevo.png";
+            btnNuevo.alt = "Crear Nuevo Boleto";
+            btnNuevo.className = "btn-sprite-crear";
+
+            btnNuevo.onclick = async () => {
+                try {
+                    await push(boletosRef, {
+                        asiento: "vacío",
+                        tipo: "vacio",
+                        pelicula: "",
+                        clasificacion: "",
+                        precio: "",
+                        ubicacion: "",
+                        sala: "",
+                        hora: "",
+                        fecha: "",
+                        asientos: "",
+                        codigo: "",
+                        qr: Array(21).fill(0).map(() => Array(21).fill(false)),
+                        creado: Date.now()
+                    });
+                } catch (e) {
+                    console.error("Error al crear: ", e);
+                }
+            };
+
+            wrapperNuevo.appendChild(tooltipNuevo);
+            wrapperNuevo.appendChild(btnNuevo);
+            contenedorBoletos.appendChild(wrapperNuevo);
+        });
+    </script>
+
+</body>
+</html>
